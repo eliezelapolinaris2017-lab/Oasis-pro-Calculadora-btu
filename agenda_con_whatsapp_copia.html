@@ -1,0 +1,224 @@
+
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agenda con WhatsApp • Copia a negocio</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  :root{--bg:#0f1117;--panel:#151a23;--line:#222a38;--ink:#e7eaf0;--muted:#a3adbd;--green:#22c55e;--blue:#38bdf8;}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial}
+  header{position:sticky;top:0;background:#0f1117cc;backdrop-filter:blur(6px);border-bottom:1px solid var(--line);z-index:10}
+  .bar{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:12px}
+  .brand{font-weight:800}
+  .wrap{max-width:980px;margin:0 auto;padding:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+  label{display:block;margin-bottom:8px}
+  input,select,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#0c1017;color:#fff}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  @media (max-width:760px){ .row,.row3{grid-template-columns:1fr} }
+  button{padding:12px 14px;border-radius:12px;border:1px solid var(--line);cursor:pointer;background:#162033;color:#fff}
+  .btn{background:linear-gradient(180deg,#1f2a3a,#16202f);border-color:#2a3547}
+  .btn.green{background:linear-gradient(180deg,#256d4a,#1b5337);border-color:#2f8b61}
+  .btn.ghost{background:#111826}
+  .list{display:grid;gap:8px}
+  .item{border:1px solid var(--line);border-radius:10px;padding:10px;background:#0e141e;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .muted{color:var(--muted);font-size:12px}
+  .tag{padding:2px 6px;border-radius:8px;border:1px solid var(--line);font-size:12px;background:#0b1220}
+  .right{display:flex;gap:8px;align-items:center}
+  .wa{display:inline-flex;gap:6px;align-items:center}
+  .switch{display:flex;align-items:center;gap:8px}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="brand">💇‍♀️ Agenda + WhatsApp (con copia)</div>
+    <div class="right">
+      <button class="btn" id="btnExport">Exportar JSON</button>
+      <label class="btn ghost">Importar <input type="file" id="importFile" accept=".json" style="display:none"></label>
+      <button class="btn" id="btnClear">Vaciar</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="card">
+    <h2 style="margin:0 0 8px">Nueva cita</h2>
+    <div class="row3">
+      <label>Cliente
+        <input id="cli" placeholder="Nombre y Apellido" required>
+      </label>
+      <label>Teléfono del cliente (WhatsApp)
+        <input id="tel" placeholder="+1 787 000 0000" required>
+      </label>
+      <label>Especialista
+        <input id="pro" list="proList" placeholder="Ej. Ana">
+      </label>
+    </div>
+    <div class="row3">
+      <label>Servicio
+        <input id="svc" list="svcList" placeholder="Ej. Corte + Secado (45)" required>
+      </label>
+      <label>Fecha
+        <input id="date" type="date" required>
+      </label>
+      <label>Hora
+        <input id="time" type="time" required>
+      </label>
+    </div>
+    <div class="row">
+      <label>Notas
+        <textarea id="notes" rows="2" placeholder="Preferencias, observaciones, etc."></textarea>
+      </label>
+      <label class="switch">Enviar copia a mi WhatsApp
+        <input type="checkbox" id="copyToggle" checked>
+      </label>
+    </div>
+    <div class="row">
+      <label>Mi WhatsApp (copia)
+        <input id="biz" value="+1 787 664 3079">
+      </label>
+      <label>Nombre del salón
+        <input id="salon" value="Oasis Air Cleaner Services LLC">
+      </label>
+    </div>
+    <div class="row">
+      <label>Mensaje de WhatsApp (plantilla)
+        <textarea id="tpl" rows="3">Hola {{cliente}} 👋, tu cita en *{{salon}}* quedó agendada:
+🗓 {{fecha}} a las {{hora}}
+💇 Servicio: {{servicio}}
+✂️ Especialista: {{pro}}
+Por favor responde CONFIRMAR para asegurar tu espacio. ¡Gracias!</textarea>
+      </label>
+    </div>
+    <div class="row">
+      <button class="btn green wa" id="btnBook">✅ Agendar y abrir WhatsApp</button>
+      <button class="btn ghost" id="btnTest">👀 Probar mensaje (sin guardar)</button>
+    </div>
+    <div class="muted" style="margin-top:6px">
+      Al pulsar “Agendar y abrir WhatsApp”, se guarda la cita en este dispositivo y se abrirá WhatsApp con el mensaje prellenado hacia el número del cliente.
+      Si la opción de copia está activada, se abrirá además un WhatsApp a tu número con la misma info.
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin:0 0 8px">Citas</h3>
+    <div id="list" class="list"></div>
+  </div>
+</div>
+
+<datalist id="svcList">
+  <option value="Corte + Secado (45)">
+  <option value="Tinte (90)">
+  <option value="Manicure (30)">
+  <option value="Pedicure (45)">
+</datalist>
+<datalist id="proList">
+  <option value="Ana"><option value="Luisa"><option value="Carla"><option value="José">
+</datalist>
+
+<script>
+// ====== Helpers ======
+const pad2 = n => String(n).padStart(2,'0');
+function to12h(h,m){ const ampm=h>=12?'PM':'AM'; const hh=h%12===0?12:h%12; return hh+':'+pad2(m)+' '+ampm; }
+function fmtFecha(d){ return d.toLocaleDateString('es-PR',{weekday:'short', day:'2-digit', month:'short', year:'numeric'}); }
+function esc(s){ return (''+(s||'')).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+function waLink(phone, text){ const clean= (phone||'').replace(/[^\d]/g,''); return 'https://wa.me/'+clean+'?text='+encodeURIComponent(text); }
+function buildMsg(tpl, ctx){ return tpl.replace(/\{\{(\w+)\}\}/g, (_,k)=> ctx[k] ?? ''); }
+
+// ====== Storage ======
+const KEY='agenda.wa.copy.v1';
+let DATA = JSON.parse(localStorage.getItem(KEY) || '[]');
+function save(){ localStorage.setItem(KEY, JSON.stringify(DATA)); }
+
+// ====== UI ======
+const list = document.getElementById('list');
+const cli = document.getElementById('cli');
+const tel = document.getElementById('tel');
+const pro = document.getElementById('pro');
+const svc = document.getElementById('svc');
+const date = document.getElementById('date');
+const time = document.getElementById('time');
+const notes = document.getElementById('notes');
+const salon = document.getElementById('salon');
+const tpl = document.getElementById('tpl');
+const biz = document.getElementById('biz');
+const copyToggle = document.getElementById('copyToggle');
+
+date.value = new Date().toISOString().slice(0,10);
+
+function render(){
+  list.innerHTML='';
+  if(DATA.length===0){ list.innerHTML='<div class="muted">No hay citas aún.</div>'; return; }
+  DATA.sort((a,b)=> a.start.localeCompare(b.start));
+  for(const it of DATA){
+    const d = new Date(it.start);
+    const div = document.createElement('div');
+    div.className='item';
+    div.innerHTML = `<div>
+      <div><b>${esc(it.cli)}</b> · <span class="tag">${esc(it.svc)}</span></div>
+      <div class="muted">${fmtFecha(d)} · ${to12h(d.getHours(),d.getMinutes())} · ${esc(it.pro||'')}</div>
+    </div>`;
+    const right = document.createElement('div'); right.className='right';
+    const w = document.createElement('a'); w.className='btn'; w.textContent='WhatsApp'; w.href=waLink(it.tel, buildMsg(tpl.value, {
+      cliente: it.cli, fecha: fmtFecha(d), hora: to12h(d.getHours(),d.getMinutes()), servicio: it.svc, pro: it.pro||'—', salon: salon.value
+    })); w.target='_blank';
+    const del = document.createElement('button'); del.className='btn'; del.textContent='Eliminar';
+    del.onclick = ()=>{ DATA = DATA.filter(x=>x.id!==it.id); save(); render(); };
+    right.appendChild(w); right.appendChild(del);
+    div.appendChild(right);
+    list.appendChild(div);
+  }
+}
+render();
+
+// ====== Booking ======
+document.getElementById('btnBook').onclick = ()=>{
+  if(!cli.value || !tel.value || !svc.value || !date.value || !time.value){ alert('Completa cliente, teléfono, servicio, fecha y hora.'); return; }
+  const start = new Date(date.value+'T'+time.value);
+  const rec = { id:'a'+Date.now(), cli:cli.value.trim(), tel:tel.value.trim(), pro:pro.value.trim(), svc:svc.value.trim(), start:start.toISOString(), notes:notes.value.trim() };
+  DATA.push(rec); save(); render();
+
+  const ctx = { cliente: rec.cli, fecha: fmtFecha(start), hora: to12h(start.getHours(),start.getMinutes()), servicio: rec.svc, pro: rec.pro||'—', salon: salon.value };
+  const linkClient = waLink(rec.tel, buildMsg(tpl.value, ctx));
+  window.open(linkClient, '_blank'); // WhatsApp del cliente
+
+  if(copyToggle.checked && biz.value.trim()){
+    const linkBiz = waLink(biz.value, 'Copia: '+buildMsg(tpl.value, ctx));
+    setTimeout(()=>window.open(linkBiz,'_blank'), 300);
+  }
+  cli.value=''; tel.value=''; notes.value='';
+};
+
+document.getElementById('btnTest').onclick = ()=>{
+  if(!tel.value || !date.value || !time.value){ alert('Pon al menos teléfono, fecha y hora para probar.'); return; }
+  const d = new Date(date.value+'T'+time.value);
+  const ctx = { cliente: cli.value||'Cliente', fecha: fmtFecha(d), hora: to12h(d.getHours(),d.getMinutes()), servicio: svc.value||'Servicio', pro: pro.value||'—', salon: salon.value };
+  const url = waLink(tel.value, buildMsg(tpl.value, ctx));
+  window.open(url, '_blank');
+};
+
+// ====== Export/Import/Clear ======
+document.getElementById('btnExport').onclick = ()=>{
+  const blob = new Blob([JSON.stringify(DATA,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='citas_whatsapp.json'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),500);
+};
+document.getElementById('importFile').addEventListener('change', e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload = ev => { try{ const arr = JSON.parse(ev.target.result); if(!Array.isArray(arr)) throw new Error('JSON inválido'); DATA = arr; save(); render(); alert('Importado ✅'); } catch(err){ alert('Error: '+err.message); } };
+  rd.readAsText(f,'UTF-8');
+});
+document.getElementById('btnClear').onclick = ()=>{
+  if(confirm('¿Vaciar todas las citas guardadas en este dispositivo?')){ localStorage.removeItem(KEY); DATA=[]; render(); }
+};
+</script>
+</body>
+</html>
